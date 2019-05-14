@@ -183,7 +183,7 @@ int main(int argc, char ** argv)
 	objet[6] = IMG_Load("SH13_oeil_120x120.png");
 	objet[7] = IMG_Load("SH13_crane_120x120.png");
 
-	gobutton = IMG_Load("gobutton.png");
+	gobutton = IMG_Load("glass.png");
 	connectbutton = IMG_Load("connectbutton.png");
 
   winner = IMG_Load("winner.jpg");
@@ -223,7 +223,7 @@ int main(int argc, char ** argv)
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
     texture_winner = SDL_CreateTextureFromSurface(renderer, winner);
 
-    TTF_Font* Sans = TTF_OpenFont("sans.ttf", 15);
+    TTF_Font* Sans = TTF_OpenFont("AppleGaramond-Italic.ttf", 20);
     printf("Sans=%p\n",Sans);
 
    /* Creation du thread serveur tcp. */
