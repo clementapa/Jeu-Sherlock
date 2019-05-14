@@ -1,6 +1,6 @@
-#include <SDL.h>        
-#include <SDL_image.h>        
-#include <SDL_ttf.h>        
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -28,7 +28,8 @@ int tableCartes[4][8];
 int b[3];
 int goEnabled;
 int connectEnabled;
-
+int joueur,objett,table,temp;
+char *gagnant;
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
@@ -134,7 +135,7 @@ int main(int argc, char ** argv)
 	char sendBuffer[256];
 	char lname[256];
 	int id;
-
+  int gagnantID=100;
         if (argc<6)
         {
                 printf("<app> <Main server ip address> <Main server port> <Client ip address> <Client port> <player name>\n");
@@ -149,10 +150,10 @@ int main(int argc, char ** argv)
 
     SDL_Init(SDL_INIT_VIDEO);
 	TTF_Init();
- 
+
     SDL_Window * window = SDL_CreateWindow("SDL2 SH13",
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1024, 768, 0);
- 
+
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
     SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton;
@@ -216,7 +217,7 @@ int main(int argc, char ** argv)
     texture_gobutton = SDL_CreateTextureFromSurface(renderer, gobutton);
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
 
-    TTF_Font* Sans = TTF_OpenFont("sans.ttf", 15); 
+    TTF_Font* Sans = TTF_OpenFont("sans.ttf", 15);
     printf("Sans=%p\n",Sans);
 
    /* Creation du thread serveur tcp. */
@@ -240,9 +241,7 @@ int main(int argc, char ** argv)
 				if ((mx<200) && (my<50) && (connectEnabled==1))
 				{
 					sprintf(sendBuffer,"C %s %d %s",gClientIpAddress,gClientPort,gName);
-
-					// RAJOUTER DU CODE ICI
-
+          sendMessageToServer(gServerIpAddress,gServerPort, sendBuffer);
 					connectEnabled=0;
 				}
 				else if ((mx>=0) && (mx<200) && (my>=90) && (my<330))
@@ -272,22 +271,19 @@ int main(int argc, char ** argv)
 					if (guiltSel!=-1)
 					{
 						sprintf(sendBuffer,"G %d %d",gId, guiltSel);
-
-					// RAJOUTER DU CODE ICI
+            sendMessageToServer(gServerIpAddress,gServerPort, sendBuffer);
 
 					}
 					else if ((objetSel!=-1) && (joueurSel==-1))
 					{
 						sprintf(sendBuffer,"O %d %d",gId, objetSel);
-
-					// RAJOUTER DU CODE ICI
+            sendMessageToServer(gServerIpAddress,gServerPort, sendBuffer);
 
 					}
 					else if ((objetSel!=-1) && (joueurSel!=-1))
 					{
 						sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
-
-					// RAJOUTER DU CODE ICI
+            sendMessageToServer(gServerIpAddress,gServerPort, sendBuffer);
 
 					}
 				}
@@ -313,29 +309,43 @@ int main(int argc, char ** argv)
 			// Message 'I' : le joueur recoit son Id
 			case 'I':
 				// RAJOUTER DU CODE ICI
-
+        gId=atoi(&gbuffer[2]);
 				break;
 			// Message 'L' : le joueur recoit la liste des joueurs
 			case 'L':
 				// RAJOUTER DU CODE ICI
-
+        sscanf( gbuffer, "L %s %s %s %s", gNames[0],gNames[1],gNames[2],gNames[3]);
 				break;
 			// Message 'D' : le joueur recoit ses trois cartes
 			case 'D':
-				// RAJOUTER DU CODE ICI
-
+				sscanf( gbuffer, "D %d %d %d", b,b+1,b+2);
 				break;
 			// Message 'M' : le joueur recoit le n° du joueur courant
 			// Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton go
 			case 'M':
-				// RAJOUTER DU CODE ICI
-
+        sscanf( gbuffer, "M %d ", &id);
+        if(id==gId)
+        goEnabled=1;
+        else
+        goEnabled=0;
 				break;
 			// Message 'V' : le joueur recoit une valeur de tableCartes
 			case 'V':
-				// RAJOUTER DU CODE ICI
-
+        sscanf(gbuffer,"V %d %d %d %d %d %d %d %d",tableCartes[gId],tableCartes[gId]+1,tableCartes[gId]+2,tableCartes[gId]+3,tableCartes[gId]+4,tableCartes[gId]+5,tableCartes[gId]+6,tableCartes[gId]+7);
 				break;
+      case 'S':
+        sscanf(gbuffer,"S %d %d %d",&table,&joueur,&objett);
+        tableCartes[joueur][objett]=table;
+        break;
+      case 'O':
+        sscanf(gbuffer,"O %d %d %d",&joueur,&objett,&temp);
+        if(joueur!=gId)
+        tableCartes[joueur][objett]=temp;
+        break;
+      case 'G':
+        sscanf(gbuffer,"G %s %d a gagné!!!!",gagnant,&gagnantID);
+      break;
+
 		}
 		synchro=0;
                 pthread_mutex_unlock( &mutex );
@@ -346,29 +356,29 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_image1 = { 0, 340, 250, 330/2 };
 
 	SDL_SetRenderDrawColor(renderer, 255, 230, 230, 230);
-	SDL_Rect rect = {0, 0, 1024, 768}; 
+	SDL_Rect rect = {0, 0, 1024, 768};
 	SDL_RenderFillRect(renderer, &rect);
 
 	if (joueurSel!=-1)
 	{
 		SDL_SetRenderDrawColor(renderer, 255, 180, 180, 255);
-		SDL_Rect rect1 = {0, 90+joueurSel*60, 200 , 60}; 
+		SDL_Rect rect1 = {0, 90+joueurSel*60, 200 , 60};
 		SDL_RenderFillRect(renderer, &rect1);
-	}	
+	}
 
 	if (objetSel!=-1)
 	{
 		SDL_SetRenderDrawColor(renderer, 180, 255, 180, 255);
-		SDL_Rect rect1 = {200+objetSel*60, 0, 60 , 90}; 
+		SDL_Rect rect1 = {200+objetSel*60, 0, 60 , 90};
 		SDL_RenderFillRect(renderer, &rect1);
-	}	
+	}
 
 	if (guiltSel!=-1)
 	{
 		SDL_SetRenderDrawColor(renderer, 180, 180, 255, 255);
-		SDL_Rect rect1 = {100, 350+guiltSel*30, 150 , 30}; 
+		SDL_Rect rect1 = {100, 350+guiltSel*30, 150 , 30};
 		SDL_RenderFillRect(renderer, &rect1);
-	}	
+	}
 
 	{
         SDL_Rect dstrect_pipe = { 210, 10, 40, 40 };
@@ -396,7 +406,7 @@ int main(int argc, char ** argv)
                 SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
                 SDL_Rect Message_rect; //create a rect
-                Message_rect.x = 230+i*60;  //controls the rect's x coordinate 
+                Message_rect.x = 230+i*60;  //controls the rect's x coordinate
                 Message_rect.y = 50; // controls the rect's y coordinte
                 Message_rect.w = surfaceMessage->w; // controls the width of the rect
                 Message_rect.h = surfaceMessage->h; // controls the height of the rect
@@ -483,7 +493,7 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_carnet = { 60, 410, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
 	}
-	// Inspector Gregson 
+	// Inspector Gregson
 	{
         SDL_Rect dstrect_couronne = { 0, 440, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
@@ -496,7 +506,7 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_carnet = { 60, 440, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[4], NULL, &dstrect_carnet);
 	}
-	// Inspector Baynes 
+	// Inspector Baynes
 	{
         SDL_Rect dstrect_couronne = { 0, 470, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
@@ -514,7 +524,7 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_poing = { 30, 500, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
 	}
-	// Inspector Hopkins 
+	// Inspector Hopkins
 	{
         SDL_Rect dstrect_couronne = { 0, 530, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[3], NULL, &dstrect_couronne);
@@ -527,7 +537,7 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_oeil = { 60, 530, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[6], NULL, &dstrect_oeil);
 	}
-	// Sherlock Holmes 
+	// Sherlock Holmes
 	{
         SDL_Rect dstrect_pipe = { 0, 560, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
@@ -540,7 +550,7 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_poing = { 60, 560, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[2], NULL, &dstrect_poing);
 	}
-	// John Watson 
+	// John Watson
 	{
         SDL_Rect dstrect_pipe = { 0, 590, 30, 30 };
         SDL_RenderCopy(renderer, texture_objet[0], NULL, &dstrect_pipe);
@@ -668,7 +678,7 @@ int main(int argc, char ** argv)
 		SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
 		SDL_Rect Message_rect; //create a rect
-		Message_rect.x = 10;  //controls the rect's x coordinate 
+		Message_rect.x = 10;  //controls the rect's x coordinate
 		Message_rect.y = 110+i*60; // controls the rect's y coordinte
 		Message_rect.w = surfaceMessage->w; // controls the width of the rect
 		Message_rect.h = surfaceMessage->h; // controls the height of the rect
@@ -680,15 +690,15 @@ int main(int argc, char ** argv)
 
         SDL_RenderPresent(renderer);
     }
- 
+
     SDL_DestroyTexture(texture_deck[0]);
     SDL_DestroyTexture(texture_deck[1]);
     SDL_FreeSurface(deck[0]);
     SDL_FreeSurface(deck[1]);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
- 
+
     SDL_Quit();
- 
+
     return 0;
 }
