@@ -13,6 +13,7 @@
 pthread_t thread_serveur_tcp_id;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 char gbuffer[256];
+char messageGagnant[256];
 char gServerIpAddress[256];
 int gServerPort;
 char gClientIpAddress[256];
@@ -29,7 +30,8 @@ int b[3];
 int goEnabled;
 int connectEnabled;
 int joueur,objett,table,temp;
-char *gagnant;
+char gagnant[256];
+int guilt;
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
@@ -135,7 +137,7 @@ int main(int argc, char ** argv)
 	char sendBuffer[256];
 	char lname[256];
 	int id;
-  int gagnantID=100;
+
         if (argc<6)
         {
                 printf("<app> <Main server ip address> <Main server port> <Client ip address> <Client port> <player name>\n");
@@ -156,7 +158,7 @@ int main(int argc, char ** argv)
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
-    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton;
+    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*winner;
 
 	deck[0] = IMG_Load("SH13_0.png");
 	deck[1] = IMG_Load("SH13_1.png");
@@ -184,6 +186,8 @@ int main(int argc, char ** argv)
 	gobutton = IMG_Load("gobutton.png");
 	connectbutton = IMG_Load("connectbutton.png");
 
+  winner = IMG_Load("winner.jpg");
+
 	strcpy(gNames[0],"-");
 	strcpy(gNames[1],"-");
 	strcpy(gNames[2],"-");
@@ -192,6 +196,7 @@ int main(int argc, char ** argv)
 	joueurSel=-1;
 	objetSel=-1;
 	guiltSel=-1;
+  guilt=100;
 
 	b[0]=-1;
 	b[1]=-1;
@@ -207,7 +212,7 @@ int main(int argc, char ** argv)
 	goEnabled=0;
 	connectEnabled=1;
 
-    SDL_Texture *texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8];
+    SDL_Texture *texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_winner;
 
 	for (i=0;i<13;i++)
 		texture_deck[i] = SDL_CreateTextureFromSurface(renderer, deck[i]);
@@ -216,6 +221,7 @@ int main(int argc, char ** argv)
 
     texture_gobutton = SDL_CreateTextureFromSurface(renderer, gobutton);
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
+    texture_winner = SDL_CreateTextureFromSurface(renderer, winner);
 
     TTF_Font* Sans = TTF_OpenFont("sans.ttf", 15);
     printf("Sans=%p\n",Sans);
@@ -324,7 +330,7 @@ int main(int argc, char ** argv)
 			// Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton go
 			case 'M':
         sscanf( gbuffer, "M %d ", &id);
-        if(id==gId)
+        if(id==gId && guilt==100)
         goEnabled=1;
         else
         goEnabled=0;
@@ -343,9 +349,9 @@ int main(int argc, char ** argv)
         tableCartes[joueur][objett]=temp;
         break;
       case 'G':
-        sscanf(gbuffer,"G %s %d a gagné!!!!",gagnant,&gagnantID);
+        sscanf(gbuffer,"G %s %d a gagné!!!!",gagnant,&guilt);
+        goEnabled=0;
       break;
-
 		}
 		synchro=0;
                 pthread_mutex_unlock( &mutex );
@@ -456,7 +462,6 @@ int main(int argc, char ** argv)
                 		SDL_FreeSurface(surfaceMessage);
 			}
         	}
-
 
 	// Sebastian Moran
 	{
@@ -666,6 +671,39 @@ int main(int argc, char ** argv)
         	SDL_Rect dstrect = { 0, 0, 200, 50 };
         	SDL_RenderCopy(renderer, texture_connectbutton, NULL, &dstrect);
 	}
+
+  if(guilt!=100){
+    SDL_Rect dstrect = {350 , 400, 1000/3,660/3 };
+    SDL_RenderCopy(renderer, texture_winner, NULL, &dstrect);
+    SDL_Color col ={0,0,0};
+    sprintf(messageGagnant,"Félicitations à %s qui est notre gagnant!! Le coupable était %s !!!",gagnant,nbnoms[guilt]);
+    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans,messageGagnant,col);
+    SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+    SDL_Rect Message_rect; //create a rect
+    Message_rect.x = 350;  //controls the rect's x coordinate
+    Message_rect.y = 650; // controls the rect's y coordinte
+    Message_rect.w = surfaceMessage->w; // controls the width of the rect
+    Message_rect.h = surfaceMessage->h; // controls the height of the rect
+
+    SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+    SDL_DestroyTexture(Message);
+    SDL_FreeSurface(surfaceMessage);
+
+    sprintf(messageGagnant,"Vous pouvez relancer une partie si vous le souhaitez !!!");
+    SDL_Surface* surfaceMessage1 = TTF_RenderText_Solid(Sans,messageGagnant,col);
+    SDL_Texture* Message1 = SDL_CreateTextureFromSurface(renderer, surfaceMessage1);
+
+    SDL_Rect Message_rect1; //create a rect
+    Message_rect1.x = 350;  //controls the rect's x coordinate
+    Message_rect1.y = 700; // controls the rect's y coordinte
+    Message_rect1.w = surfaceMessage1->w; // controls the width of the rect
+    Message_rect1.h = surfaceMessage1->h; // controls the height of the rect
+
+    SDL_RenderCopy(renderer, Message1, NULL, &Message_rect1);
+    SDL_DestroyTexture(Message1);
+    SDL_FreeSurface(surfaceMessage1);
+  }
 
         //SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
         //SDL_RenderDrawLine(renderer, 0, 0, 200, 200);

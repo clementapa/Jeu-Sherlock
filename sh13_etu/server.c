@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
       case 'G':
         sscanf(buffer,"G %d %d",&ID,&guilt);
         if(guilt==deck[12]){
-          sprintf(reply,"G %s %d a gagné!!!!",tcpClients[ID].name,ID);
+          sprintf(reply,"G %s %d a gagné!!!!",tcpClients[ID].name,guilt);
           broadcastMessage(reply);
         }
         else{
@@ -367,13 +367,15 @@ int main(int argc, char *argv[])
       case 'O':
         sscanf(buffer,"O %d %d",&ID,&objetSel);
         for(int i =0;i<4;i++){
-          if(tableCartes[i][objetSel]>0){
-            sprintf(reply,"O %d %d 100",i,objetSel);
-            broadcastMessage(reply);
-          }
-          else{
-            sprintf(reply,"O %d %d 0",i,objetSel);
-            broadcastMessage(reply);
+          if(i!=ID){
+            if(tableCartes[i][objetSel]>0){
+              sprintf(reply,"O %d %d 100",i,objetSel);
+              broadcastMessage(reply);
+            }
+            else{
+              sprintf(reply,"O %d %d 0",i,objetSel);
+              broadcastMessage(reply);
+            }
           }
         }
         joueurCourant++;
