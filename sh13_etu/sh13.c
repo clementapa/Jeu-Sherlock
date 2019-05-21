@@ -30,13 +30,22 @@ int b[3];
 int goEnabled;
 int connectEnabled;
 int joueur,objett,table,temp;
+int perdants[4]={1,1,1,1};
 char gagnant[256];
+char perdant[256];
+int id;
+int messa,MessageEnable=0;
+char envoyeur[256];
 int guilt;
+int SendMessage=-1;
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
   "inspector Hopkins", "Sherlock Holmes", "John Watson", "Mycroft Holmes",
   "Mrs. Hudson", "Mary Morstan", "James Moriarty"};
+char *messages[]={"Vite", "Noob", "mmmmm malin",
+     "Fuck You","image surprise","Tu reves de gagner?"};
+
 
 volatile int synchro;
 
@@ -158,7 +167,7 @@ int main(int argc, char ** argv)
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
-    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*winner;
+    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*winner,*fond,*croix,*mess,*deck2[6];
 
 	deck[0] = IMG_Load("SH13_0.png");
 	deck[1] = IMG_Load("SH13_1.png");
@@ -175,7 +184,7 @@ int main(int argc, char ** argv)
 	deck[12] = IMG_Load("SH13_12.png");
 
 	objet[0] = IMG_Load("SH13_pipe_120x120.png");
-	objet[1] = IMG_Load("SH13_ampoule_120x120.png");
+	objet[1] = IMG_Load("SH13_ampoul1_120x120.png");
 	objet[2] = IMG_Load("SH13_poing_120x120.png");
 	objet[3] = IMG_Load("SH13_couronne_120x120.png");
 	objet[4] = IMG_Load("SH13_carnet_120x120.png");
@@ -183,10 +192,24 @@ int main(int argc, char ** argv)
 	objet[6] = IMG_Load("SH13_oeil_120x120.png");
 	objet[7] = IMG_Load("SH13_crane_120x120.png");
 
+  /* Les Photos qui correspondent au messages*/
+  deck2[0] = IMG_Load("mess1.jpg");
+	deck2[1] = IMG_Load("mess2.jpg");
+	deck2[2] = IMG_Load("mess3.jpg");
+	deck2[3] = IMG_Load("mess4.jpg");
+	deck2[4] = IMG_Load("mess5.jpg");
+	deck2[5] = IMG_Load("mess6.jpg");
+
+
+
+
 	gobutton = IMG_Load("glass.png");
-	connectbutton = IMG_Load("connectbutton.png");
+	connectbutton = IMG_Load("connect.jpeg");
 
   winner = IMG_Load("winner.jpg");
+  fond = IMG_Load("wall.jpg");
+  croix = IMG_Load("croix.png");
+  mess = IMG_Load("Message.png");
 
 	strcpy(gNames[0],"-");
 	strcpy(gNames[1],"-");
@@ -212,18 +235,24 @@ int main(int argc, char ** argv)
 	goEnabled=0;
 	connectEnabled=1;
 
-    SDL_Texture *texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_winner;
+    SDL_Texture *texture_deck2[6],*texture_mes,*texture_croix,*texture_fond,*texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_winner;
 
 	for (i=0;i<13;i++)
 		texture_deck[i] = SDL_CreateTextureFromSurface(renderer, deck[i]);
 	for (i=0;i<8;i++)
 		texture_objet[i] = SDL_CreateTextureFromSurface(renderer, objet[i]);
+  for (i=0;i<6;i++)
+  	texture_deck2[i] = SDL_CreateTextureFromSurface(renderer, deck2[i]);
 
     texture_gobutton = SDL_CreateTextureFromSurface(renderer, gobutton);
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
     texture_winner = SDL_CreateTextureFromSurface(renderer, winner);
 
-    TTF_Font* Sans = TTF_OpenFont("AppleGaramond-Italic.ttf", 20);
+    texture_fond = SDL_CreateTextureFromSurface(renderer, fond);
+    texture_croix = SDL_CreateTextureFromSurface(renderer, croix);
+    texture_mes = SDL_CreateTextureFromSurface(renderer, mess);
+
+    TTF_Font* Sans = TTF_OpenFont("AppleGaramond-BoldItalic.ttf", 18);
     printf("Sans=%p\n",Sans);
 
    /* Creation du thread serveur tcp. */
@@ -270,7 +299,22 @@ int main(int argc, char ** argv)
 				{
 					int ind=(my-350)/30;
 					guiltGuess[ind]=1-guiltGuess[ind];
+
 				}
+        else if ((mx>=305) && (mx<345)&& (my>=350) && (my<390))
+        {
+          SendMessage*=-1;
+        }
+        /* Envoie Message*/
+        else if ((mx>=305) && (mx<605) && (my>=410) && (my<740) && SendMessage==1)
+        {
+          int Mg=(my-410)/30;
+          SendMessage*=-1;
+          sprintf(sendBuffer,"Z %d %d",gId, Mg);
+          sendMessageToServer(gServerIpAddress,gServerPort, sendBuffer);
+        }
+
+
 				else if ((mx>=500) && (mx<700) && (my>=350) && (my<450) && (goEnabled==1))
 				{
 					printf("go! joueur=%d objet=%d guilt=%d\n",joueurSel, objetSel, guiltSel);
@@ -295,6 +339,7 @@ int main(int argc, char ** argv)
 				}
 				else
 				{
+          SendMessage=-1;
 					joueurSel=-1;
 					objetSel=-1;
 					guiltSel=-1;
@@ -345,12 +390,20 @@ int main(int argc, char ** argv)
         break;
       case 'O':
         sscanf(gbuffer,"O %d %d %d",&joueur,&objett,&temp);
-        if(joueur!=gId)
+        if(joueur!=gId && tableCartes[joueur][objett]==-1)
         tableCartes[joueur][objett]=temp;
         break;
       case 'G':
         sscanf(gbuffer,"G %s %d a gagné!!!!",gagnant,&guilt);
         goEnabled=0;
+      break;
+      case 'E':
+        sscanf(gbuffer,"E %s %d a tenté sa chance mais est éliminé!!!!!",perdant,&id);
+        perdants[id]=0;
+      break;
+      case 'Z':
+        sscanf(gbuffer,"Z %s %d ",envoyeur,&messa);
+        MessageEnable=1;
       break;
 		}
 		synchro=0;
@@ -361,9 +414,13 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_image = { 0, 0, 500, 330 };
         SDL_Rect dstrect_image1 = { 0, 340, 250, 330/2 };
 
-	SDL_SetRenderDrawColor(renderer, 255, 230, 230, 230);
-	SDL_Rect rect = {0, 0, 1024, 768};
-	SDL_RenderFillRect(renderer, &rect);
+        SDL_Rect dstrect_fond = { 0, 0, 1024, 768};
+        SDL_Rect dstrect_mes = { 305, 350, 40, 40};
+  SDL_RenderCopy(renderer, texture_fond, NULL, &dstrect_fond);
+  SDL_RenderCopy(renderer, texture_mes, NULL, &dstrect_mes);
+  //SDL_SetRenderDrawColor(renderer, 255, 230, 230, 230);
+	//SDL_Rect rect = {0, 0, 1024, 768};
+	//SDL_RenderFillRect(renderer, &rect);
 
 	if (joueurSel!=-1)
 	{
@@ -385,6 +442,12 @@ int main(int argc, char ** argv)
 		SDL_Rect rect1 = {100, 350+guiltSel*30, 150 , 30};
 		SDL_RenderFillRect(renderer, &rect1);
 	}
+  for(int i=0;i<4;i++){
+      if(perdants[i]==0){
+        SDL_Rect dstrect_croix = { 155, 100+ i*60, 40, 40};
+        SDL_RenderCopy(renderer, texture_croix, NULL, &dstrect_croix);
+      }
+  }
 
 	{
         SDL_Rect dstrect_pipe = { 210, 10, 40, 40 };
@@ -404,7 +467,6 @@ int main(int argc, char ** argv)
         SDL_Rect dstrect_crane = { 630, 10, 40, 40 };
         SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect_crane);
 	}
-
         SDL_Color col1 = {0, 0, 0};
         for (i=0;i<8;i++)
         {
@@ -437,6 +499,71 @@ int main(int argc, char ** argv)
                 SDL_DestroyTexture(Message);
                 SDL_FreeSurface(surfaceMessage);
         }
+
+        SDL_Color col2 = {1, 1, 0};
+          if(SendMessage==1){
+            for (i=0;i<7;i++)
+              SDL_RenderDrawLine(renderer, 310,350+60+i*30,510,350+60+i*30);
+            SDL_RenderDrawLine(renderer, 310,350+60,310,740);
+            SDL_RenderDrawLine(renderer, 310+200,350+60,310+200,740);
+
+            for (i=0;i<6;i++)
+            {
+                    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, messages[i], col2);
+                    SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+
+                    SDL_Rect Message_rect;
+                    Message_rect.x = 315;
+                    Message_rect.y = 410+i*30;
+                    Message_rect.w = surfaceMessage->w;
+                    Message_rect.h = surfaceMessage->h;
+
+                    SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+                    SDL_DestroyTexture(Message);
+                    SDL_FreeSurface(surfaceMessage);
+            }
+
+          }
+
+  /*afficher le chat*/
+  if (MessageEnable==1) {
+
+    /*afficher chat*/
+    sprintf(messageGagnant," Chat Box :");
+    SDL_Surface* surfaceMessage1 = TTF_RenderText_Solid(Sans,messageGagnant,col2);
+    SDL_Texture* Message1 = SDL_CreateTextureFromSurface(renderer, surfaceMessage1);
+
+    SDL_Rect Message_rect1; //create a rect
+    Message_rect1.x = 750;  //controls the rect's x coordinate
+    Message_rect1.y = 360+180-5; // controls the rect's y coordinte
+    Message_rect1.w = surfaceMessage1->w; // controls the width of the rect
+    Message_rect1.h = surfaceMessage1->h; // controls the height of the rect
+
+    SDL_RenderCopy(renderer, Message1, NULL, &Message_rect1);
+    SDL_DestroyTexture(Message1);
+    SDL_FreeSurface(surfaceMessage1);
+    /*************************/
+
+    /*afficher photo au dessous*/
+    SDL_Rect dstrect = { 750, 360+180+40, 1000/4, 660/4 };
+    SDL_RenderCopy(renderer, texture_deck2[messa], NULL, &dstrect);
+
+    sprintf(messageGagnant," %s : %s",envoyeur,messages[messa]);
+    SDL_Surface* surfaceMessage2 = TTF_RenderText_Solid(Sans,messageGagnant,col2);
+    SDL_Texture* Message2 = SDL_CreateTextureFromSurface(renderer, surfaceMessage2);
+
+    SDL_Rect Message_rect2; //create a rect
+    Message_rect2.x = 750;  //controls the rect's x coordinate
+    Message_rect2.y = 360+180+15; // controls the rect's y coordinte
+    Message_rect2.w = surfaceMessage2->w; // controls the width of the rect
+    Message_rect2.h = surfaceMessage2->h; // controls the height of the rect
+
+    SDL_RenderCopy(renderer, Message2, NULL, &Message_rect2);
+    SDL_DestroyTexture(Message2);
+    SDL_FreeSurface(surfaceMessage2);
+    /***********************/
+  }
+
 
 	for (i=0;i<4;i++)
         	for (j=0;j<8;j++)
@@ -650,12 +777,12 @@ int main(int argc, char ** argv)
 	}
 	if (b[1]!=-1)
 	{
-        	SDL_Rect dstrect = { 750, 200, 1000/4, 660/4 };
+        	SDL_Rect dstrect = { 750, 180, 1000/4, 660/4 };
         	SDL_RenderCopy(renderer, texture_deck[b[1]], NULL, &dstrect);
 	}
 	if (b[2]!=-1)
 	{
-        	SDL_Rect dstrect = { 750, 400, 1000/4, 660/4 };
+        	SDL_Rect dstrect = { 750, 360, 1000/4, 660/4 };
         	SDL_RenderCopy(renderer, texture_deck[b[2]], NULL, &dstrect);
 	}
 
@@ -668,7 +795,7 @@ int main(int argc, char ** argv)
 	// Le bouton connect
 	if (connectEnabled==1)
 	{
-        	SDL_Rect dstrect = { 0, 0, 200, 50 };
+        	SDL_Rect dstrect = { 0, 0, 50, 50 };
         	SDL_RenderCopy(renderer, texture_connectbutton, NULL, &dstrect);
 	}
 
@@ -676,7 +803,7 @@ int main(int argc, char ** argv)
     SDL_Rect dstrect = {350 , 400, 1000/3,660/3 };
     SDL_RenderCopy(renderer, texture_winner, NULL, &dstrect);
     SDL_Color col ={0,0,0};
-    sprintf(messageGagnant,"Félicitations à %s qui est notre gagnant!! Le coupable était %s !!!",gagnant,nbnoms[guilt]);
+    sprintf(messageGagnant,"Felicitations a %s qui est notre gagnant!!",gagnant);
     SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans,messageGagnant,col);
     SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
@@ -689,6 +816,20 @@ int main(int argc, char ** argv)
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
     SDL_DestroyTexture(Message);
     SDL_FreeSurface(surfaceMessage);
+
+    sprintf(messageGagnant,"Le coupable etait %s !!!",nbnoms[guilt]);
+    SDL_Surface* surfaceMessage2 = TTF_RenderText_Solid(Sans,messageGagnant,col);
+    SDL_Texture* Message2 = SDL_CreateTextureFromSurface(renderer, surfaceMessage2);
+
+    SDL_Rect Message_rect2; //create a rect
+    Message_rect2.x = 350;  //controls the rect's x coordinate
+    Message_rect2.y = 680; // controls the rect's y coordinte
+    Message_rect2.w = surfaceMessage2->w; // controls the width of the rect
+    Message_rect2.h = surfaceMessage2->h; // controls the height of the rect
+
+    SDL_RenderCopy(renderer, Message2, NULL, &Message_rect2);
+    SDL_DestroyTexture(Message2);
+    SDL_FreeSurface(surfaceMessage2);
 
     sprintf(messageGagnant,"Vous pouvez relancer une partie si vous le souhaitez !!!");
     SDL_Surface* surfaceMessage1 = TTF_RenderText_Solid(Sans,messageGagnant,col);

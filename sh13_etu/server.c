@@ -342,6 +342,7 @@ int main(int argc, char *argv[])
     int guilt;
     int objetSel;
     int joueurSel;
+    int mess;
 		switch (buffer[0])
 		{
       case 'G':
@@ -351,7 +352,7 @@ int main(int argc, char *argv[])
           broadcastMessage(reply);
         }
         else{
-          sprintf(reply,"%s a tenté sa chance mais est éliminé!!!!!",tcpClients[ID].name);
+          sprintf(reply,"E %s %d a tenté sa chance mais est éliminé!!!!!",tcpClients[ID].name,ID);
           broadcastMessage(reply);
           tcpClients[ID].etat=0;
         }
@@ -400,6 +401,11 @@ int main(int argc, char *argv[])
         sprintf(reply,"M %d",joueurCourant);
         broadcastMessage(reply);
 				break;
+      case 'Z':
+        sscanf(buffer,"Z %d %d ",&ID,&mess);
+        sprintf(reply,"Z %s %d ",tcpClients[ID].name,mess);
+        broadcastMessage(reply);
+        break;
                 	default:
                         	break;
 		}
