@@ -29,25 +29,25 @@ int tableCartes[4][8];
 int b[3];
 int goEnabled;
 int connectEnabled;
-int joueur,objett,table,temp;
-int perdants[4]={1,1,1,1};
-char gagnant[256];
-char perdant[256];
-int id;
-int messa,MessageEnable=0;
-char envoyeur[256];
-int guilt;
-int SendMessage=-1;
+int joueur,objett,table,temp;//pour stockage scanf de "S" et "O"
+int perdants[4]={1,1,1,1};//tout les joueurs ne sont pas eliminé, les cases du tableau corresponds aux id des joueurs (valeur à 1) si un joueur est éliminé avec id sont identif on met perdants[id]=0 pour pouvoir afficher une croix a son prenom
+char gagnant[256];//le nom du gagnant pour pouvoir l'afficher à la fin du jeu
+char perdant[256];//Le nom du perdant pour pouvoir l'afficher sur le terminale
+int id;//stock le joueur courant
+int messa,MessageEnable=0;//Pour le chat: MessageEnable pour ouvrir le chatBox
+char envoyeur[256];//Nom de la personne qui envoie le message
+int guilt;//numero du coupable que l'on recupere via G .... pour pour pouvoir afficher le nom du coupable si la personne à gagné en denoncant le coupable
+int SendMessage=-1;//deplier et replier le tableau de message
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
   "inspector Hopkins", "Sherlock Holmes", "John Watson", "Mycroft Holmes",
   "Mrs. Hudson", "Mary Morstan", "James Moriarty"};
 char *messages[]={"Vite", "Noob", "mmmmm malin",
-     "Fuck You","image surprise","Tu reves de gagner?"};
+     "Vulgarite","c'est parti!!","Tu reves de gagner?","Bien joue","Congrats","Je suis le meilleur","ahahaha","Les MAIN en sortie scolaire"};
 
 
-volatile int synchro;
+volatile int synchro;//
 
 void *fn_serveur_tcp(void *arg)
 {
@@ -167,49 +167,53 @@ int main(int argc, char ** argv)
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
-    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*winner,*fond,*croix,*mess,*deck2[6];
+    SDL_Surface *deck[13],*objet[8],*gobutton,*connectbutton,*winner,*fond,*croix,*mess,*PhotoChat[12];
 
-	deck[0] = IMG_Load("SH13_0.png");
-	deck[1] = IMG_Load("SH13_1.png");
-	deck[2] = IMG_Load("SH13_2.png");
-	deck[3] = IMG_Load("SH13_3.png");
-	deck[4] = IMG_Load("SH13_4.png");
-	deck[5] = IMG_Load("SH13_5.png");
-	deck[6] = IMG_Load("SH13_6.png");
-	deck[7] = IMG_Load("SH13_7.png");
-	deck[8] = IMG_Load("SH13_8.png");
-	deck[9] = IMG_Load("SH13_9.png");
-	deck[10] = IMG_Load("SH13_10.png");
-	deck[11] = IMG_Load("SH13_11.png");
-	deck[12] = IMG_Load("SH13_12.png");
+	deck[0] = IMG_Load("media/SH13_0.png");
+	deck[1] = IMG_Load("media/SH13_1.png");
+	deck[2] = IMG_Load("media/SH13_2.png");
+	deck[3] = IMG_Load("media/SH13_3.png");
+	deck[4] = IMG_Load("media/SH13_4.png");
+	deck[5] = IMG_Load("media/SH13_5.png");
+	deck[6] = IMG_Load("media/SH13_6.png");
+	deck[7] = IMG_Load("media/SH13_7.png");
+	deck[8] = IMG_Load("media/SH13_8.png");
+	deck[9] = IMG_Load("media/SH13_9.png");
+	deck[10] = IMG_Load("media/SH13_10.png");
+	deck[11] = IMG_Load("media/SH13_11.png");
+	deck[12] = IMG_Load("media/SH13_12.png");
 
-	objet[0] = IMG_Load("SH13_pipe_120x120.png");
-	objet[1] = IMG_Load("SH13_ampoul1_120x120.png");
-	objet[2] = IMG_Load("SH13_poing_120x120.png");
-	objet[3] = IMG_Load("SH13_couronne_120x120.png");
-	objet[4] = IMG_Load("SH13_carnet_120x120.png");
-	objet[5] = IMG_Load("SH13_collier_120x120.png");
-	objet[6] = IMG_Load("SH13_oeil_120x120.png");
-	objet[7] = IMG_Load("SH13_crane_120x120.png");
+	objet[0] = IMG_Load("media/SH13_pipe_120x120.png");
+	objet[1] = IMG_Load("media/SH13_ampoul1_120x120.png");
+	objet[2] = IMG_Load("media/SH13_poing_120x120.png");
+	objet[3] = IMG_Load("media/SH13_couronne_120x120.png");
+	objet[4] = IMG_Load("media/SH13_carnet_120x120.png");
+	objet[5] = IMG_Load("media/SH13_collier_120x120.png");
+	objet[6] = IMG_Load("media/SH13_oeil_120x120.png");
+	objet[7] = IMG_Load("media/SH13_crane_120x120.png");
 
   /* Les Photos qui correspondent au messages*/
-  deck2[0] = IMG_Load("mess1.jpg");
-	deck2[1] = IMG_Load("mess2.jpg");
-	deck2[2] = IMG_Load("mess3.jpg");
-	deck2[3] = IMG_Load("mess4.jpg");
-	deck2[4] = IMG_Load("mess5.jpg");
-	deck2[5] = IMG_Load("mess6.jpg");
+  PhotoChat[0] = IMG_Load("media/mess1.jpg");
+	PhotoChat[1] = IMG_Load("media/mess2.jpg");
+	PhotoChat[2] = IMG_Load("media/mess3.jpg");
+	PhotoChat[3] = IMG_Load("media/mess4.jpg");
+	PhotoChat[4] = IMG_Load("media/mess5.jpg");
+	PhotoChat[5] = IMG_Load("media/mess6.jpg");
+  PhotoChat[6] = IMG_Load("media/mess7.jpg");
+  PhotoChat[7] = IMG_Load("media/mess8.jpg");
+  PhotoChat[8] = IMG_Load("media/mess9.jpg");
+  PhotoChat[9] = IMG_Load("media/mess11.jpg");
+  PhotoChat[10] = IMG_Load("media/mess12.jpg");
+  PhotoChat[11] = IMG_Load("media/mess12.jpg");
 
 
+	gobutton = IMG_Load("media/glass.png");
+	connectbutton = IMG_Load("media/connect.jpeg");
 
-
-	gobutton = IMG_Load("glass.png");
-	connectbutton = IMG_Load("connect.jpeg");
-
-  winner = IMG_Load("winner.jpg");
-  fond = IMG_Load("wall.jpg");
-  croix = IMG_Load("croix.png");
-  mess = IMG_Load("Message.png");
+  winner = IMG_Load("media/winner.jpg");
+  fond = IMG_Load("media/wall.jpg");
+  croix = IMG_Load("media/croix.png");
+  mess = IMG_Load("media/Message.png");
 
 	strcpy(gNames[0],"-");
 	strcpy(gNames[1],"-");
@@ -235,14 +239,14 @@ int main(int argc, char ** argv)
 	goEnabled=0;
 	connectEnabled=1;
 
-    SDL_Texture *texture_deck2[6],*texture_mes,*texture_croix,*texture_fond,*texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_winner;
+    SDL_Texture *texture_PhotoChat[12],*texture_mes,*texture_croix,*texture_fond,*texture_deck[13],*texture_gobutton,*texture_connectbutton,*texture_objet[8],*texture_winner;
 
 	for (i=0;i<13;i++)
 		texture_deck[i] = SDL_CreateTextureFromSurface(renderer, deck[i]);
 	for (i=0;i<8;i++)
 		texture_objet[i] = SDL_CreateTextureFromSurface(renderer, objet[i]);
-  for (i=0;i<6;i++)
-  	texture_deck2[i] = SDL_CreateTextureFromSurface(renderer, deck2[i]);
+  for (i=0;i<11;i++)
+  	texture_PhotoChat[i] = SDL_CreateTextureFromSurface(renderer, PhotoChat[i]);
 
     texture_gobutton = SDL_CreateTextureFromSurface(renderer, gobutton);
     texture_connectbutton = SDL_CreateTextureFromSurface(renderer, connectbutton);
@@ -252,7 +256,7 @@ int main(int argc, char ** argv)
     texture_croix = SDL_CreateTextureFromSurface(renderer, croix);
     texture_mes = SDL_CreateTextureFromSurface(renderer, mess);
 
-    TTF_Font* Sans = TTF_OpenFont("AppleGaramond-BoldItalic.ttf", 18);
+    TTF_Font* Sans = TTF_OpenFont("media/AppleGaramond-BoldItalic.ttf", 18);
     printf("Sans=%p\n",Sans);
 
    /* Creation du thread serveur tcp. */
@@ -442,6 +446,7 @@ int main(int argc, char ** argv)
 		SDL_Rect rect1 = {100, 350+guiltSel*30, 150 , 30};
 		SDL_RenderFillRect(renderer, &rect1);
 	}
+
   for(int i=0;i<4;i++){
       if(perdants[i]==0){
         SDL_Rect dstrect_croix = { 155, 100+ i*60, 40, 40};
@@ -500,14 +505,14 @@ int main(int argc, char ** argv)
                 SDL_FreeSurface(surfaceMessage);
         }
 
-        SDL_Color col2 = {1, 1, 0};
+        SDL_Color col2 = {0, 0, 0};
           if(SendMessage==1){
-            for (i=0;i<7;i++)
+            for (i=0;i<13;i++)
               SDL_RenderDrawLine(renderer, 310,350+60+i*30,510,350+60+i*30);
             SDL_RenderDrawLine(renderer, 310,350+60,310,740);
             SDL_RenderDrawLine(renderer, 310+200,350+60,310+200,740);
 
-            for (i=0;i<6;i++)
+            for (i=0;i<11;i++)
             {
                     SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, messages[i], col2);
                     SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
@@ -546,7 +551,7 @@ int main(int argc, char ** argv)
 
     /*afficher photo au dessous*/
     SDL_Rect dstrect = { 750, 360+180+40, 1000/4, 660/4 };
-    SDL_RenderCopy(renderer, texture_deck2[messa], NULL, &dstrect);
+    SDL_RenderCopy(renderer, texture_PhotoChat[messa], NULL, &dstrect);
 
     sprintf(messageGagnant," %s : %s",envoyeur,messages[messa]);
     SDL_Surface* surfaceMessage2 = TTF_RenderText_Solid(Sans,messageGagnant,col2);
