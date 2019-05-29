@@ -177,7 +177,7 @@ void sendMessageToClient(char *clientip,int clientport,char *mess)
     struct hostent *server;
     char buffer[256];
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);//0 tcp 1 udp
 
     server = gethostbyname(clientip);
     if (server == NULL) {

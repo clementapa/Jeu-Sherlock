@@ -47,7 +47,7 @@ char *messages[]={"Vite", "Noob", "mmmmm malin",
      "Vulgarite","c'est parti!!","Tu reves de gagner?","Bien joue","Congrats","Je suis le meilleur","ahahaha","Les MAIN en sortie scolaire"};
 
 
-volatile int synchro;//
+volatile int synchro;//piocher direct dans la mémoire
 
 void *fn_serveur_tcp(void *arg)
 {
