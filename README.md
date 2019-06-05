@@ -2,6 +2,7 @@
 Jeu Sherlock13 
 
 Utilisation:
+Dans le repertoire SH13_etu :
 
 1/ Lancer un serveur via la commande ./server <num_port>
 
